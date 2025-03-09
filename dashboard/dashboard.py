@@ -90,6 +90,10 @@ avg_hourly = df_filtered.groupby("hour")[selected_param].mean().reset_index()
 
 # Section 1 (Hourly Trends)
 st.subheader(f"Tren {selected_param} Berdasarkan Jam")
+# st.write("Statistik PM2.5 Setelah Pengolahan:")
+# st.write(df_filtered["PM2.5"].describe())
+# st.write("Filtered DataFrame:", df_filtered)
+# st.write("Average Hourly Data:", avg_hourly)
 
 chart = {
     "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
@@ -121,7 +125,7 @@ chart = {
 
 st.vega_lite_chart(chart, use_container_width=True)
 
-
+st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
 
 # section 2 (seasonal & weekly trends)
 st.subheader(f"Perbedaan pola {selected_param} berdasarkan musim")
@@ -141,12 +145,15 @@ else:
     ax.set_title(f"Distribusi {selected_param} Berdasarkan Musim")
 
     st.pyplot(fig)
-
+    
+    
     with st.expander("See explanation"):
         st.write(
             """Visualisasi ini menunjukkan kadar rata-rata dari variabel yang dipilih pada setiap musim."""
         )
-        
+
+st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
+
 # section 3 (daily pattern)
 st.subheader(f"Pola {selected_param} Berdasarkan Hari dalam Seminggu")
 fig, ax = plt.subplots(figsize=(10, 5))
@@ -158,6 +165,7 @@ ax.set_xticks(ax.get_xticks())
 ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
 st.pyplot(fig)
 
+st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
 
 # section 4 (comparison)
 if location == "Semua":
@@ -183,6 +191,8 @@ if location == "Semua":
             st.write(
                 """Visualisasi ini menunjukkan distribusi (boxplot) dan rata-rata (barplot) dari variabel yang dipilih berdasarkan lokasi."""
             )
+
+st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
 
 
 # section 5(CLUSTERING)
