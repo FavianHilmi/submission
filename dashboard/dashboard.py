@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 from datetime import datetime
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
