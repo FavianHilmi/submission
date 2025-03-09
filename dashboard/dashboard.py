@@ -8,14 +8,21 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
 
-
 st.set_page_config(page_title="Analisis Kualitas Udara", layout="wide")
 st.header('Analisis Kualitas Udara di Changping dan Dongsi')
 
 @st.cache_data
 def load_data():
-    changping_df = pd.read_csv("C:/laragon/www/Project_LaskarAi/submission/data/PRSA_Data_Changping.csv", sep=';')
-    dongsi_df = pd.read_csv("C:/laragon/www/Project_LaskarAi/submission/data/PRSA_Data_Dongsi.csv", sep=';')
+    # Ambil path direktori saat ini (lokasi file dashboard.py)
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    
+    # Buat path relatif ke folder data
+    changping_path = os.path.join(BASE_DIR, "../data/PRSA_Data_Changping.csv")
+    dongsi_path = os.path.join(BASE_DIR, "../data/PRSA_Data_Dongsi.csv")
+    
+    # Baca CSV dari path relatif
+    changping_df = pd.read_csv(changping_path, sep=';')
+    dongsi_df = pd.read_csv(dongsi_path, sep=';')
     
     changping_df['station'] = 'Changping'
     dongsi_df['station'] = 'Dongsi'
