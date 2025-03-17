@@ -132,7 +132,21 @@ chart = {
 }
 
 st.vega_lite_chart(chart, use_container_width=True)
+# Hitung jam dengan rata-rata tertinggi dan terendah
+max_hour = avg_hourly.loc[avg_hourly[selected_param].idxmax(), "hour"]
+min_hour = avg_hourly.loc[avg_hourly[selected_param].idxmin(), "hour"]
+max_value = avg_hourly[selected_param].max()
+min_value = avg_hourly[selected_param].min()
 
+# Tampilkan kesimpulan
+st.markdown(f"""
+Dari analisis tren **{selected_param}** berdasarkan jam, diperoleh bahwa:  
+
+- **Kadar {selected_param} tertinggi** terjadi pada pukul **{max_hour}:00**, dengan rata-rata **{max_value:.2f} µg/m³**.  
+- **Kadar {selected_param} terendah** terjadi pada pukul **{min_hour}:00**, dengan rata-rata **{min_value:.2f} µg/m³**.  
+
+Pola ini menunjukkan adanya **fluktuasi kadar {selected_param} sepanjang hari**, yang dapat dipengaruhi oleh aktivitas manusia, pola lalu lintas, serta faktor lingkungan seperti suhu dan kelembaban.  
+""")
 st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
 
 # section 2 (seasonal & weekly trends)
@@ -154,26 +168,122 @@ else:
 
     st.pyplot(fig)
     
+    # Hitung rata-rata per musim
+    avg_per_season = df_filtered.groupby("season", observed=True)[selected_param].mean()
+
+    # Tentukan musim dengan nilai tertinggi dan terendah
+    max_season = avg_per_season.idxmax()
+    min_season = avg_per_season.idxmin()
+    max_value = avg_per_season.max()
+    min_value = avg_per_season.min()
+
+    # Tampilkan kesimpulan
+    # st.subheader("Kesimpulan")
+    st.markdown(f"""
+    Dari analisis kadar **{selected_param}** berdasarkan musim, terlihat bahwa:  
+
+    - Musim dengan **kadar {selected_param} tertinggi** adalah **{max_season}** dengan rata-rata **{max_value:.2f} µg/m³**.  
+    - Musim dengan **kadar {selected_param} terendah** adalah **{min_season}** dengan rata-rata **{min_value:.2f} µg/m³**.  
+
+    Hal ini menunjukkan adanya perbedaan signifikan dalam kadar {selected_param} di berbagai musim.  
+    Faktor seperti cuaca, suhu, kelembaban, serta aktivitas manusia mungkin berkontribusi terhadap variasi ini.  
+    """)
     
-    with st.expander("See explanation"):
-        st.write(
-            """Visualisasi ini menunjukkan kadar rata-rata dari variabel yang dipilih pada setiap musim."""
-        )
+    # with st.expander("See explanation"):
+    #     st.write(
+    #         """Visualisasi ini menunjukkan kadar rata-rata dari variabel yang dipilih pada setiap musim."""
+    #     )
 
 st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
 
 # section 3 (daily pattern)
-st.subheader(f"Pola {selected_param} Berdasarkan Hari dalam Seminggu")
-fig, ax = plt.subplots(figsize=(10, 5))
-sns.boxplot(x="day_of_week", y=selected_param, data=df_filtered, 
-            order=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], ax=ax)
-ax.set_xlabel("Hari")
-ax.set_ylabel(selected_param)
-ax.set_xticks(ax.get_xticks())
-ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-st.pyplot(fig)
+# st.subheader(f"Pola {selected_param} Berdasarkan Hari dalam Seminggu")
+# fig, ax = plt.subplots(figsize=(10, 5))
+# sns.boxplot(x="day_of_week", y=selected_param, data=df_filtered, 
+#             order=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], ax=ax)
+# ax.set_xlabel("Hari")
+# ax.set_ylabel(selected_param)
+# ax.set_xticks(ax.get_xticks())
+# ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+# st.pyplot(fig)
 
+# st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
+
+# Section 3 pengganti (daily pattern)
+st.subheader(f"Pola {selected_param} Berdasarkan Hari dalam Seminggu")
+
+# Perbaiki urutan hari
+weekday_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+# Pastikan hanya data dengan hari yang valid
+df_filtered = df_filtered[df_filtered["day_of_week"].isin(weekday_order)].copy()
+
+# Konversi kategori agar urutannya sesuai
+df_filtered["day_of_week"] = pd.Categorical(df_filtered["day_of_week"], categories=weekday_order, ordered=True)
+
+# Pastikan data numerik untuk y-axis
+df_filtered[selected_param] = pd.to_numeric(df_filtered[selected_param], errors="coerce")
+
+# Hitung rata-rata untuk setiap hari agar line chart lebih smooth
+df_grouped = df_filtered.groupby("day_of_week", observed=True, as_index=False)[selected_param].mean()
+
+chart = {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "title": f"Rata-rata {selected_param} dalam seminggu",
+    "mark": {"type": "line", "strokeWidth": 3, "color": "#83c9ff"},
+    "encoding": {
+        "x": {
+            "field": "day_of_week",
+            "type": "ordinal",
+            "sort": weekday_order,
+            "axis": {
+                "title": "Hari",
+                "labelColor": "#e6eaf1",
+                "titleColor": "#e6eaf1",
+                "labelAngle": -45
+            }
+        },
+        "y": {
+            "field": selected_param,
+            "type": "quantitative",
+            "axis": {
+                "title": selected_param,
+                "labelColor": "#e6eaf1",
+                "titleColor": "#e6eaf1"
+            }
+        }
+    },
+    "data": {"values": df_grouped.to_dict(orient="records")},
+    "config": {
+        "background": "#0e1117",
+        "title": {"color": "#fafafa", "fontSize": 16},
+        "axis": {
+            "labelFontSize": 12,
+            "titleFontSize": 14,
+            "gridColor": "#31333F"
+        }
+    }
+}
+
+st.vega_lite_chart(chart, use_container_width=True)
+
+# Tambahkan tabel rata-rata per hari
+# st.subheader("Rata-rata per Hari dalam Seminggu")
+st.dataframe(df_grouped.style.format({selected_param: "{:.2f}"}))
+# Temukan hari dengan nilai tertinggi dan terendah
+max_day = df_grouped.loc[df_grouped[selected_param].idxmax(), "day_of_week"]
+min_day = df_grouped.loc[df_grouped[selected_param].idxmin(), "day_of_week"]
+max_value = df_grouped[selected_param].max()
+min_value = df_grouped[selected_param].min()
+
+# Tampilkan kesimpulan otomatis
+# st.subheader("Kesimpulan")
+st.markdown(f"""
+Berdasarkan analisis data, hari dengan **{selected_param} tertinggi** adalah **{max_day}** dengan rata-rata **{max_value:.2f}**.  
+Sementara itu, hari dengan **{selected_param} terendah** adalah **{min_day}** dengan rata-rata **{min_value:.2f}**.  
+""")
 st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
+
 
 # section 4 (comparison)
 if location == "Semua":
@@ -195,10 +305,28 @@ if location == "Semua":
 
         st.pyplot(fig)
 
-        with st.expander("See explanation"):
-            st.write(
-                """Visualisasi ini menunjukkan distribusi (boxplot) dan rata-rata (barplot) dari variabel yang dipilih berdasarkan lokasi."""
-            )
+        # Hitung rata-rata per lokasi
+        avg_per_location = df_filtered.groupby("station", observed=True)[selected_param].mean()
+
+        # Tentukan lokasi dengan nilai tertinggi dan terendah
+        max_station = avg_per_location.idxmax()
+        min_station = avg_per_location.idxmin()
+        max_value = avg_per_location.max()
+        min_value = avg_per_location.min()
+
+        # Tampilkan kesimpulan
+        # st.subheader("Kesimpulan")
+        st.markdown(f"""
+        Berdasarkan perbandingan kadar **{selected_param}** antara Kota **Changping** dan **Dongsi**,  
+        dapat disimpulkan bahwa lokasi dengan **kadar {selected_param} tertinggi** adalah **{max_station}** dengan rata-rata **{max_value:.2f}**.  
+        Sementara itu, lokasi dengan **kadar {selected_param} terendah** adalah **{min_station}** dengan rata-rata **{min_value:.2f}**.  
+
+        Perbedaan ini menunjukkan adanya variasi kadar {selected_param} antara kedua lokasi, yang dapat disebabkan oleh faktor lingkungan, aktivitas manusia, atau kondisi cuaca.  
+        """)
+        # with st.expander("See explanation"):
+        #     st.write(
+        #         """Visualisasi ini menunjukkan distribusi (boxplot) dan rata-rata (barplot) dari variabel yang dipilih berdasarkan lokasi."""
+        #     )
 
 st.markdown("<br><hr style='height:3px;border:none;border-top:3px solid #f0f0f0;'><br>", unsafe_allow_html=True)
 
@@ -224,16 +352,34 @@ plt.xlabel("PM2.5")
 plt.ylabel("PM10")
 plt.title("Clustering Berdasarkan PM2.5 dan PM10")
 st.pyplot(fig)
+# Hitung jumlah data di tiap cluster
+cluster_counts = df_filtered["Cluster"].value_counts().sort_index()
 
+# Tampilkan kesimpulan
+# Hitung jumlah data di tiap cluster
 # tampilkan hasil dalam tabel
 st.write("Distribusi Cluster:")
 st.dataframe(df_filtered[["station", "PM2.5", "PM10", "SO2", "NO2", "CO", "O3", "Cluster"]].head(20))
 
-fig, ax = plt.subplots(figsize=(10,6))
-sns.boxplot(x=df_filtered["Cluster"], y=df_filtered["PM2.5"], ax=ax)
-plt.title("Distribusi PM2.5 di Setiap Cluster")
-st.pyplot(fig)
+cluster_counts = df_filtered["Cluster"].value_counts().sort_index()
+
+# Tampilkan kesimpulan
+# st.subheader("Kesimpulan")
+st.markdown(f"""
+Analisis **K-Means Clustering** membagi data kualitas udara menjadi **3 kelompok utama**, berdasarkan kadar **PM2.5 dan PM10**. Hasilnya adalah:  
+
+- **Cluster 0**: Menunjukkan area dengan **kualitas udara baik** (konsentrasi polutan rendah).  
+- **Cluster 1**: Mengindikasikan **kualitas udara sedang**, dengan tingkat polusi yang tidak terlalu tinggi tetapi masih perlu diperhatikan.  
+- **Cluster 2**: Merepresentasikan **area dengan polusi tinggi**, yang berpotensi berdampak buruk pada kesehatan manusia.  
+
+**Informasi ini dapat digunakan untuk kebijakan lingkungan, pemantauan polusi, dan peringatan dini bagi masyarakat**
+""")
+
+# fig, ax = plt.subplots(figsize=(10,6))
+# sns.boxplot(x=df_filtered["Cluster"], y=df_filtered["PM2.5"], ax=ax)
+# plt.title("Distribusi PM2.5 di Setiap Cluster")
+# st.pyplot(fig)
 
 
 
-st.write("Dashboard Analisis Kualitas Udara")
+# st.write("Dashboard Analisis Kualitas Udara")
